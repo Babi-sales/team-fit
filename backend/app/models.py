@@ -141,6 +141,10 @@ class MealLogItem(Base):
     meal_log: Mapped["MealLog"] = relationship(back_populates="items")
     food: Mapped["Food | None"] = relationship()
 
+    @property
+    def food_name(self) -> str | None:
+        return self.food.name if self.food else None
+
 
 class TrainingPlan(Base):
     __tablename__ = "training_plans"

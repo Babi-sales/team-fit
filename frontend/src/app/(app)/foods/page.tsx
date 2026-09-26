@@ -147,7 +147,7 @@ export default function FoodsPage() {
                   <td className="py-2 pr-2 text-right">{f.carbs_per_100g}g</td>
                   <td className="py-2 pr-2 text-right">{f.fat_per_100g}g</td>
                   <td className="py-2 text-right">
-                    <button onClick={() => startEdit(f)} className="text-xs text-[#2a78d6]">
+                    <button onClick={() => startEdit(f)} className="text-xs text-[var(--accent)]">
                       editar
                     </button>
                   </td>

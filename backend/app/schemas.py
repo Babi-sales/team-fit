@@ -2,19 +2,19 @@ import uuid
 from datetime import date, datetime
 from datetime import time as time_of_day
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 # ---------- Auth ----------
 class LoginIn(BaseModel):
-    pin: str
+    pin: str = Field(max_length=32)
 
 
 # ---------- People ----------
 class PersonIn(BaseModel):
     sex: str | None = None
     birth_date: date | None = None
-    height_cm: float | None = None
+    height_cm: float | None = Field(default=None, gt=0, le=300)
     activity_level: str | None = None
     dietary_restrictions: list[str] = []
     health_conditions: list[str] = []
@@ -33,9 +33,9 @@ class PersonOut(PersonIn):
 # ---------- Goals ----------
 class GoalIn(BaseModel):
     goal_type: str  # lose_weight | gain_weight | maintain_weight
-    target_weight_kg: float | None = None
-    target_kcal_day: int | None = None
-    target_protein_g_day: int | None = None
+    target_weight_kg: float | None = Field(default=None, gt=0, le=500)
+    target_kcal_day: int | None = Field(default=None, gt=0, le=10000)
+    target_protein_g_day: int | None = Field(default=None, gt=0, le=1000)
     target_date: date | None = None
 
 
@@ -51,7 +51,7 @@ class GoalOut(GoalIn):
 # ---------- Weight ----------
 class WeightLogIn(BaseModel):
     date: date
-    weight_kg: float
+    weight_kg: float = Field(gt=0, le=500)
     note: str | None = None
 
 
@@ -64,12 +64,12 @@ class WeightLogOut(WeightLogIn):
 # ---------- Body measurements ----------
 class BodyMeasurementIn(BaseModel):
     date: date
-    waist_cm: float | None = None
-    hip_cm: float | None = None
-    chest_cm: float | None = None
-    arm_cm: float | None = None
-    thigh_cm: float | None = None
-    neck_cm: float | None = None
+    waist_cm: float | None = Field(default=None, gt=0, le=300)
+    hip_cm: float | None = Field(default=None, gt=0, le=300)
+    chest_cm: float | None = Field(default=None, gt=0, le=300)
+    arm_cm: float | None = Field(default=None, gt=0, le=200)
+    thigh_cm: float | None = Field(default=None, gt=0, le=200)
+    neck_cm: float | None = Field(default=None, gt=0, le=100)
     other_measurements: dict = {}
     note: str | None = None
 
@@ -84,11 +84,11 @@ class BodyMeasurementOut(BodyMeasurementIn):
 class FoodIn(BaseModel):
     name: str
     category: str | None = None
-    kcal_per_100g: float
-    protein_per_100g: float = 0
-    carbs_per_100g: float = 0
-    fat_per_100g: float = 0
-    default_portion_g: float | None = None
+    kcal_per_100g: float = Field(ge=0, le=9000)
+    protein_per_100g: float = Field(default=0, ge=0, le=100)
+    carbs_per_100g: float = Field(default=0, ge=0, le=100)
+    fat_per_100g: float = Field(default=0, ge=0, le=100)
+    default_portion_g: float | None = Field(default=None, gt=0)
     default_portion_label: str | None = None
     source: str | None = None
 
@@ -117,12 +117,12 @@ class TrainingPlanOut(TrainingPlanIn):
 # ---------- Meal logs ----------
 class MealLogItemIn(BaseModel):
     food_id: uuid.UUID | None = None
-    quantity_g: float | None = None
+    quantity_g: float | None = Field(default=None, gt=0, le=10000)
     # Only used when food_id is not set (e.g. a restaurant item with no match
     # in the food table) — kcal/protein are then taken as-is, not computed.
     free_text_description: str | None = None
-    kcal: float | None = None
-    protein_g: float | None = None
+    kcal: float | None = Field(default=None, ge=0, le=20000)
+    protein_g: float | None = Field(default=None, ge=0, le=2000)
 
 
 class MealLogItemOut(BaseModel):
@@ -130,6 +130,7 @@ class MealLogItemOut(BaseModel):
     id: uuid.UUID
     meal_log_id: uuid.UUID
     food_id: uuid.UUID | None
+    food_name: str | None = None
     free_text_description: str | None
     quantity_g: float | None
     kcal: float

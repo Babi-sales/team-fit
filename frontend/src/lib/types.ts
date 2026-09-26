@@ -72,6 +72,7 @@ export interface MealLogItem {
   id: string;
   meal_log_id: string;
   food_id: string | null;
+  food_name: string | null;
   free_text_description: string | null;
   quantity_g: number | null;
   kcal: number;

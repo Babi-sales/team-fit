@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { Button, Card, Input, PageHeader, Select, StatTile } from "@/components/ui";
+import MealHistory from "@/components/MealHistory";
 import { useApp } from "@/context/AppContext";
 import { apiFetch, withPerson } from "@/lib/api";
 import { DailyTotals, Food, MealLog, MealType } from "@/lib/types";
@@ -203,7 +204,7 @@ export default function LogPage() {
                 {meal.items.map((item) => (
                   <li key={item.id} className="flex items-center justify-between text-[var(--ink-secondary)]">
                     <span>
-                      {item.food_id ? `${item.quantity_g}g` : ""} {item.free_text_description ?? ""}
+                      {item.food_name ? `${item.quantity_g}g ${item.food_name}` : item.free_text_description}
                     </span>
                     <span className="flex items-center gap-2">
                       <span className="text-xs">
@@ -330,6 +331,8 @@ export default function LogPage() {
           {saving ? "Salvando…" : `Salvar refeição (${Math.round(stagedTotalKcal)} kcal)`}
         </Button>
       </Card>
+
+      <MealHistory person={person} />
     </div>
   );
 }

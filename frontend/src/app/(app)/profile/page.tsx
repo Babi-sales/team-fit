@@ -7,6 +7,12 @@ import { useApp } from "@/context/AppContext";
 import { apiFetch, withPerson } from "@/lib/api";
 import { BodyMeasurement, Goal, GoalType, Person, WeightLog } from "@/lib/types";
 
+const GOAL_TYPE_LABELS: Record<GoalType, string> = {
+  lose_weight: "Perder peso",
+  gain_weight: "Ganhar peso",
+  maintain_weight: "Manter peso",
+};
+
 async function safeGet<T>(path: string): Promise<T | null> {
   try {
     return await apiFetch<T>(path);
@@ -235,7 +241,7 @@ export default function ProfilePage() {
         <h2 className="mb-1 text-sm font-semibold">Meta</h2>
         {activeGoal && (
           <p className="mb-3 text-xs text-[var(--ink-muted)]">
-            Meta ativa desde {activeGoal.start_date}: {activeGoal.goal_type.replace("_", " ")}
+            Meta ativa desde {activeGoal.start_date}: {GOAL_TYPE_LABELS[activeGoal.goal_type]}
           </p>
         )}
         <form onSubmit={saveGoal} className="grid grid-cols-1 gap-3 sm:grid-cols-2">

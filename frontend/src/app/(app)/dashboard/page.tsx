@@ -7,6 +7,7 @@ import IndexChart from "@/components/charts/IndexChart";
 import MeasurementsChart from "@/components/charts/MeasurementsChart";
 import WeightTrendChart from "@/components/charts/WeightTrendChart";
 import { Card, PageHeader, StatTile } from "@/components/ui";
+import WeighInReminder from "@/components/WeighInReminder";
 import { useApp } from "@/context/AppContext";
 import { apiFetch, withPerson } from "@/lib/api";
 import { classificationColor } from "@/lib/colors";
@@ -76,6 +77,8 @@ export default function DashboardPage() {
     <div className="space-y-4">
       <PageHeader title="Painel" subtitle="Evolução de peso, medidas e adesão à meta" />
 
+      <WeighInReminder weightHistory={summary.weight_history} measurementHistory={summary.measurement_history} />
+
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <StatTile label="Peso atual" value={summary.current_weight_kg ? `${summary.current_weight_kg} kg` : "—"} sub={changeLabel} />
         <StatTile label="Meta de peso" value={summary.target_weight_kg ? `${summary.target_weight_kg} kg` : "—"} />
@@ -122,7 +125,7 @@ export default function DashboardPage() {
                 key={option}
                 onClick={() => setDays(option)}
                 className={`rounded-lg px-2 py-1 text-xs ${
-                  days === option ? "bg-[#2a78d6] text-white" : "text-[var(--ink-muted)] hover:bg-[var(--page)]"
+                  days === option ? "bg-[var(--accent)] text-white" : "text-[var(--ink-muted)] hover:bg-[var(--page)]"
                 }`}
               >
                 {option}d

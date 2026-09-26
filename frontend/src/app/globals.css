@@ -2,29 +2,83 @@
 @plugin "@tailwindcss/typography";
 
 :root {
-  --page: #f9f9f7;
-  --surface: #fcfcfb;
-  --ink-primary: #0b0b0b;
-  --ink-secondary: #52514e;
-  --ink-muted: #898781;
-  --grid: #e1e0d9;
-  --baseline: #c3c2b7;
-  --border: rgba(11, 11, 11, 0.1);
+  --page: #eef1f7;
+  --surface: #ffffff;
+  --surface-raised: #ffffff;
+  --ink-primary: #10152b;
+  --ink-secondary: #4b5165;
+  --ink-muted: #8891a5;
+  --grid: #e4e8f1;
+  --baseline: #c7cede;
+  --border: #dfe3ee;
+  --accent: #2a5fd6;
+  --accent-hover: #2350b8;
+  --accent-soft: #eaf0fd;
+  --shadow-card: 0 1px 2px rgba(16, 24, 55, 0.04), 0 6px 16px -4px rgba(16, 24, 55, 0.08);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --page: #0d0d0d;
-    --surface: #1a1a19;
-    --ink-primary: #ffffff;
-    --ink-secondary: #c3c2b7;
-    --ink-muted: #898781;
-    --grid: #2c2c2a;
-    --baseline: #383835;
-    --border: rgba(255, 255, 255, 0.1);
+    --page: #0b0d14;
+    --surface: #151824;
+    --surface-raised: #1b1f2e;
+    --ink-primary: #f3f4f8;
+    --ink-secondary: #b8bdd0;
+    --ink-muted: #7d829c;
+    --grid: #262b3d;
+    --baseline: #343a52;
+    --border: rgba(255, 255, 255, 0.09);
+    --accent: #6d94f5;
+    --accent-hover: #86a6f7;
+    --accent-soft: rgba(109, 148, 245, 0.15);
+    --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.3), 0 6px 16px -4px rgba(0, 0, 0, 0.4);
   }
+}
+
+:root[data-theme="light"] {
+  --page: #eef1f7;
+  --surface: #ffffff;
+  --surface-raised: #ffffff;
+  --ink-primary: #10152b;
+  --ink-secondary: #4b5165;
+  --ink-muted: #8891a5;
+  --grid: #e4e8f1;
+  --baseline: #c7cede;
+  --border: #dfe3ee;
+  --accent: #2a5fd6;
+  --accent-hover: #2350b8;
+  --accent-soft: #eaf0fd;
+  --shadow-card: 0 1px 2px rgba(16, 24, 55, 0.04), 0 6px 16px -4px rgba(16, 24, 55, 0.08);
+}
+
+:root[data-theme="dark"] {
+  --page: #0b0d14;
+  --surface: #151824;
+  --surface-raised: #1b1f2e;
+  --ink-primary: #f3f4f8;
+  --ink-secondary: #b8bdd0;
+  --ink-muted: #7d829c;
+  --grid: #262b3d;
+  --baseline: #343a52;
+  --border: rgba(255, 255, 255, 0.09);
+  --accent: #6d94f5;
+  --accent-hover: #86a6f7;
+  --accent-soft: rgba(109, 148, 245, 0.15);
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.3), 0 6px 16px -4px rgba(0, 0, 0, 0.4);
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
   font-family: var(--font-geist-sans), system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: var(--page);
+}
+
+/* Full-height standalone (home-screen / tablet) layout without browser chrome
+   getting in the way of the bottom tab bar's safe-area padding. */
+html,
+body {
+  height: 100%;
 }

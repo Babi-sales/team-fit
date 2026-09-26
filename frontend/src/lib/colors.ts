@@ -25,10 +25,14 @@ export function classificationColor(texto: string | null): string {
   return status.critical; // alto, obesidade, abaixo do peso
 }
 
+// Matches the app chrome tokens in globals.css (light mode) — charts render
+// on a white surface so their ink/grid tones are re-validated against #ffffff
+// (see the dataviz skill's palette validator; categorical/status hues above
+// are unchanged since only the chart chrome, not the hues, was re-themed).
 export const ink = {
-  primary: "#0b0b0b",
-  secondary: "#52514e",
-  muted: "#898781",
-  grid: "#e1e0d9",
-  baseline: "#c3c2b7",
+  primary: "#10152b",
+  secondary: "#4b5165",
+  muted: "#8891a5",
+  grid: "#e4e8f1",
+  baseline: "#c7cede",
 };

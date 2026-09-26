@@ -24,7 +24,7 @@ async def _daily_totals(db: AsyncSession, person_id: uuid.UUID, day: date, goal:
     result = await db.execute(
         select(MealLog)
         .where(MealLog.person_id == person_id, MealLog.date == day)
-        .options(selectinload(MealLog.items))
+        .options(selectinload(MealLog.items).selectinload(MealLogItem.food))
         .order_by(MealLog.time)
     )
     meals = result.scalars().all()
@@ -51,7 +51,11 @@ async def list_meal_logs(
     person_id: uuid.UUID = Depends(get_person_id),
     db: AsyncSession = Depends(get_db),
 ):
-    stmt = select(MealLog).where(MealLog.person_id == person_id).options(selectinload(MealLog.items))
+    stmt = (
+        select(MealLog)
+        .where(MealLog.person_id == person_id)
+        .options(selectinload(MealLog.items).selectinload(MealLogItem.food))
+    )
     if date_from:
         stmt = stmt.where(MealLog.date >= date_from)
     if date_to:
@@ -124,6 +128,8 @@ async def add_meal_log_item(
     db.add(item)
     await db.commit()
     await db.refresh(item)
+    if payload.food_id is not None:
+        item.food = food  # already loaded above — avoids a lazy-load in async context
     return item
 
 
