@@ -1,11 +1,12 @@
-"""Single shared-PIN auth — no per-user identity. A correct PIN issues a signed,
-expiring session cookie; `require_session` just checks that cookie is present and
-valid. There is no notion of "who" is logged in, only "is this browser allowed in".
+"""Single shared-password auth — no per-user identity. A correct password issues
+a signed, expiring session cookie; `require_session` just checks that cookie is
+present and valid. There is no notion of "who" is logged in, only "is this
+browser allowed in".
 
-Also implements a simple per-IP rate limit on login attempts — a 6-digit PIN has
-only 10^6 combinations, so unlimited guessing would otherwise be feasible over
-time. Assumes the app sits behind a trusted reverse proxy (Caddy/Traefik) that
-sets X-Forwarded-For; it is never reachable directly from the internet.
+Also implements a simple per-IP rate limit on login attempts, since this is the
+only thing standing between an attacker and the app once they can reach it.
+Assumes the app sits behind a trusted reverse proxy (Caddy/Traefik) that sets
+X-Forwarded-For; it is never reachable directly from the internet.
 """
 
 import time

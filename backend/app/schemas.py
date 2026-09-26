@@ -7,7 +7,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 # ---------- Auth ----------
 class LoginIn(BaseModel):
-    pin: str = Field(max_length=32)
+    password: str = Field(max_length=128)
 
 
 # ---------- People ----------

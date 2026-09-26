@@ -39,17 +39,17 @@ function PersonToggle({ person, setPerson }: { person: PersonSlug; setPerson: (p
 }
 
 export default function NavShell({ children }: { children: React.ReactNode }) {
-  const { pinOk, pinChecked, logout, person, setPerson } = useApp();
+  const { authOk, authChecked, logout, person, setPerson } = useApp();
   const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
-    if (pinChecked && !pinOk) {
+    if (authChecked && !authOk) {
       router.replace("/login");
     }
-  }, [pinChecked, pinOk, router]);
+  }, [authChecked, authOk, router]);
 
-  if (!pinChecked || !pinOk) {
+  if (!authChecked || !authOk) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[var(--page)] text-sm text-[var(--ink-secondary)]">
         Carregando…

@@ -9,9 +9,9 @@ class Settings(BaseSettings):
     database_url: str
     frontend_origins: str = "http://localhost:3000"
 
-    # Shared PIN that gates the whole app (no per-user accounts).
-    app_pin: str
-    # Used to sign the session cookie issued after a correct PIN.
+    # Shared password that gates the whole app (no per-user accounts).
+    app_password: str
+    # Used to sign the session cookie issued after a correct password.
     session_secret: str
 
     @property

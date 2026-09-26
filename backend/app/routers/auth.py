@@ -24,9 +24,9 @@ async def login(payload: LoginIn, request: Request, response: Response):
     ip = client_ip(request)
     check_login_rate_limit(ip)
 
-    if not secrets.compare_digest(payload.pin, settings.app_pin):
+    if not secrets.compare_digest(payload.password, settings.app_password):
         record_failed_login(ip)
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Wrong PIN")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Wrong password")
 
     clear_failed_logins(ip)
     response.set_cookie(

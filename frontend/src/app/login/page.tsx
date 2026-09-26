@@ -7,9 +7,9 @@ import { useApp } from "@/context/AppContext";
 import { Button, Card, Input } from "@/components/ui";
 
 export default function LoginPage() {
-  const { verifyPin } = useApp();
+  const { verifyPassword } = useApp();
   const router = useRouter();
-  const [pin, setPin] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -17,12 +17,12 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    const ok = await verifyPin(pin);
+    const ok = await verifyPassword(password);
     setLoading(false);
     if (ok) {
       router.replace("/dashboard");
     } else {
-      setError("PIN incorreto.");
+      setError("Senha incorreta.");
     }
   }
 
@@ -30,18 +30,17 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-[var(--page)] px-4">
       <Card className="w-full max-w-xs">
         <h1 className="mb-1 text-lg font-semibold">Team Fit</h1>
-        <p className="mb-4 text-sm text-[var(--ink-secondary)]">Digite o PIN para entrar.</p>
+        <p className="mb-4 text-sm text-[var(--ink-secondary)]">Digite a senha para entrar.</p>
         <form onSubmit={handleSubmit} className="space-y-3">
           <Input
             type="password"
-            inputMode="numeric"
             autoFocus
-            placeholder="PIN"
-            value={pin}
-            onChange={(e) => setPin(e.target.value)}
+            placeholder="Senha"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
           />
           {error && <p className="text-xs text-[#d03b3b]">{error}</p>}
-          <Button type="submit" disabled={loading || !pin} className="w-full">
+          <Button type="submit" disabled={loading || !password} className="w-full">
             {loading ? "Entrando…" : "Entrar"}
           </Button>
         </form>

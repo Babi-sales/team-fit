@@ -8,9 +8,9 @@ import { PersonSlug } from "@/lib/types";
 const PERSON_STORAGE_KEY = "teamfit_person";
 
 interface AppContextValue {
-  pinOk: boolean;
-  pinChecked: boolean;
-  verifyPin: (pin: string) => Promise<boolean>;
+  authOk: boolean;
+  authChecked: boolean;
+  verifyPassword: (password: string) => Promise<boolean>;
   logout: () => Promise<void>;
   person: PersonSlug;
   setPerson: (person: PersonSlug) => void;
@@ -19,8 +19,8 @@ interface AppContextValue {
 const AppContext = createContext<AppContextValue | undefined>(undefined);
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
-  const [pinOk, setPinOk] = useState(false);
-  const [pinChecked, setPinChecked] = useState(false);
+  const [authOk, setAuthOk] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
   const [person, setPersonState] = useState<PersonSlug>("paulo");
 
   useEffect(() => {
@@ -40,23 +40,23 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     let cancelled = false;
     apiFetch("/auth/session")
       .then(() => {
-        if (!cancelled) setPinOk(true);
+        if (!cancelled) setAuthOk(true);
       })
       .catch(() => {
-        if (!cancelled) setPinOk(false);
+        if (!cancelled) setAuthOk(false);
       })
       .finally(() => {
-        if (!cancelled) setPinChecked(true);
+        if (!cancelled) setAuthChecked(true);
       });
     return () => {
       cancelled = true;
     };
   }, []);
 
-  const verifyPin = useCallback(async (pin: string) => {
+  const verifyPassword = useCallback(async (password: string) => {
     try {
-      await apiFetch("/auth/login", { method: "POST", body: JSON.stringify({ pin }) });
-      setPinOk(true);
+      await apiFetch("/auth/login", { method: "POST", body: JSON.stringify({ password }) });
+      setAuthOk(true);
       return true;
     } catch {
       return false;
@@ -67,12 +67,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     try {
       await apiFetch("/auth/logout", { method: "POST" });
     } finally {
-      setPinOk(false);
+      setAuthOk(false);
     }
   }, []);
 
   return (
-    <AppContext.Provider value={{ pinOk, pinChecked, verifyPin, logout, person, setPerson }}>
+    <AppContext.Provider value={{ authOk, authChecked, verifyPassword, logout, person, setPerson }}>
       {children}
     </AppContext.Provider>
   );

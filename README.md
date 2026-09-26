@@ -2,7 +2,7 @@
 
 A small self-hosted app for tracking meals, weight, body measurements and a
 training plan for two people. Built for personal/household use — no accounts,
-just a shared PIN.
+just a shared password.
 
 - **Backend:** FastAPI (Python) + Postgres
 - **Frontend:** Next.js (TypeScript) + Tailwind
@@ -41,7 +41,7 @@ backend/            FastAPI — REST API
     routers/         one file per resource (people, goals, weight, foods, meal-logs, ...)
     models.py         SQLAlchemy models
     schemas.py         Pydantic schemas
-    auth.py            shared-PIN session auth (no per-user accounts)
+    auth.py            shared-password session auth (no per-user accounts)
   sql/schema.sql       Postgres schema
   seed/foods.json      nutrition reference data (committed — no personal data)
 frontend/            Next.js app (mobile + desktop)
@@ -66,7 +66,7 @@ psql postgresql://teamfit:teamfit@localhost:5432/teamfit -f backend/sql/schema.s
 cd backend
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env   # fill in DATABASE_URL/APP_PIN/SESSION_SECRET
+cp .env.example .env   # fill in DATABASE_URL/APP_PASSWORD/SESSION_SECRET
 uvicorn app.main:app --reload
 ```
 
@@ -101,7 +101,7 @@ automatic HTTPS — runs via a single `docker-compose.yml`, behind one domain.
 3. Create the real `.env` **on the server** (never in git):
    ```bash
    cp .env.example .env
-   # fill in DOMAIN, POSTGRES_PASSWORD, APP_PIN, SESSION_SECRET
+   # fill in DOMAIN, POSTGRES_PASSWORD, APP_PASSWORD, SESSION_SECRET
    ```
 4. Start everything:
    ```bash
@@ -135,8 +135,8 @@ docker compose up -d --build
 | Variable | Where | Purpose |
 |---|---|---|
 | `DATABASE_URL` | backend | Postgres connection string |
-| `APP_PIN` | backend | shared PIN that gates the app |
+| `APP_PASSWORD` | backend | shared password that gates the app |
 | `SESSION_SECRET` | backend | signs the session cookie |
 | `FRONTEND_ORIGINS` | backend | CORS allowlist (comma-separated) |
 | `NEXT_PUBLIC_API_URL` | frontend (build-time) | backend base URL the browser calls |
-| `DOMAIN` / `POSTGRES_PASSWORD` / `APP_PIN` / `SESSION_SECRET` | root `.env` (docker-compose) | fills in the above for the full stack |
+| `DOMAIN` / `POSTGRES_PASSWORD` / `APP_PASSWORD` / `SESSION_SECRET` | root `.env` (docker-compose) | fills in the above for the full stack |
