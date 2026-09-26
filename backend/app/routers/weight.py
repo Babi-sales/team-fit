@@ -1,43 +1,40 @@
 import uuid
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.auth import CurrentUser, get_current_user, resolve_target_user_id
+from app.auth import require_session
 from app.database import get_db
+from app.deps import get_person_id
 from app.models import WeightLog
 from app.schemas import WeightLogIn, WeightLogOut
 
-router = APIRouter(prefix="/weight-logs", tags=["weight"])
+router = APIRouter(prefix="/weight-logs", tags=["weight"], dependencies=[Depends(require_session)])
 
 
 @router.get("", response_model=list[WeightLogOut])
 async def list_weight_logs(
-    user_id: uuid.UUID | None = Query(None),
-    current_user: CurrentUser = Depends(get_current_user),
+    person_id: uuid.UUID = Depends(get_person_id),
     db: AsyncSession = Depends(get_db),
 ):
-    target_id = resolve_target_user_id(user_id, current_user)
-    result = await db.execute(select(WeightLog).where(WeightLog.user_id == target_id).order_by(WeightLog.data))
+    result = await db.execute(select(WeightLog).where(WeightLog.person_id == person_id).order_by(WeightLog.date))
     return result.scalars().all()
 
 
 @router.post("", response_model=WeightLogOut, status_code=201)
 async def upsert_weight_log(
     payload: WeightLogIn,
-    user_id: uuid.UUID | None = Query(None),
-    current_user: CurrentUser = Depends(get_current_user),
+    person_id: uuid.UUID = Depends(get_person_id),
     db: AsyncSession = Depends(get_db),
 ):
-    target_id = resolve_target_user_id(user_id, current_user)
     stmt = (
         insert(WeightLog)
-        .values(user_id=target_id, **payload.model_dump())
+        .values(person_id=person_id, **payload.model_dump())
         .on_conflict_do_update(
-            index_elements=[WeightLog.user_id, WeightLog.data],
-            set_={"peso_kg": payload.peso_kg, "observacao": payload.observacao},
+            index_elements=[WeightLog.person_id, WeightLog.date],
+            set_={"weight_kg": payload.weight_kg, "note": payload.note},
         )
         .returning(WeightLog)
     )

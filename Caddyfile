@@ -1,0 +1,11 @@
+{$DOMAIN} {
+	# Strips the /api prefix before forwarding — backend routes have no
+	# prefix of their own (e.g. /auth/login, /dashboard, /foods).
+	handle_path /api/* {
+		reverse_proxy backend:8000
+	}
+
+	handle {
+		reverse_proxy frontend:3000
+	}
+}

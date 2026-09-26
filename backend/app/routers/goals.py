@@ -1,58 +1,53 @@
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.auth import CurrentUser, get_current_user, resolve_target_user_id
+from app.auth import require_session
 from app.database import get_db
+from app.deps import get_person_id
 from app.models import Goal
 from app.schemas import GoalIn, GoalOut
 
-router = APIRouter(prefix="/goals", tags=["goals"])
+router = APIRouter(prefix="/goals", tags=["goals"], dependencies=[Depends(require_session)])
 
 
 @router.get("/active", response_model=GoalOut)
 async def get_active_goal(
-    user_id: uuid.UUID | None = Query(None),
-    current_user: CurrentUser = Depends(get_current_user),
+    person_id: uuid.UUID = Depends(get_person_id),
     db: AsyncSession = Depends(get_db),
 ):
-    target_id = resolve_target_user_id(user_id, current_user)
     result = await db.execute(
-        select(Goal).where(Goal.user_id == target_id, Goal.ativo.is_(True)).order_by(Goal.created_at.desc())
+        select(Goal).where(Goal.person_id == person_id, Goal.active.is_(True)).order_by(Goal.created_at.desc())
     )
     goal = result.scalars().first()
     if goal is None:
-        raise HTTPException(status_code=404, detail="Nenhuma meta ativa cadastrada")
+        raise HTTPException(status_code=404, detail="No active goal set")
     return goal
 
 
 @router.get("", response_model=list[GoalOut])
 async def list_goals(
-    user_id: uuid.UUID | None = Query(None),
-    current_user: CurrentUser = Depends(get_current_user),
+    person_id: uuid.UUID = Depends(get_person_id),
     db: AsyncSession = Depends(get_db),
 ):
-    target_id = resolve_target_user_id(user_id, current_user)
-    result = await db.execute(select(Goal).where(Goal.user_id == target_id).order_by(Goal.created_at.desc()))
+    result = await db.execute(select(Goal).where(Goal.person_id == person_id).order_by(Goal.created_at.desc()))
     return result.scalars().all()
 
 
 @router.post("", response_model=GoalOut, status_code=201)
 async def create_goal(
     payload: GoalIn,
-    user_id: uuid.UUID | None = Query(None),
-    current_user: CurrentUser = Depends(get_current_user),
+    person_id: uuid.UUID = Depends(get_person_id),
     db: AsyncSession = Depends(get_db),
 ):
-    target_id = resolve_target_user_id(user_id, current_user)
-    # desativa metas anteriores — só uma meta ativa por vez
-    previous = await db.execute(select(Goal).where(Goal.user_id == target_id, Goal.ativo.is_(True)))
+    # Deactivate previous goals — only one active goal at a time.
+    previous = await db.execute(select(Goal).where(Goal.person_id == person_id, Goal.active.is_(True)))
     for old_goal in previous.scalars().all():
-        old_goal.ativo = False
+        old_goal.active = False
 
-    goal = Goal(user_id=target_id, **payload.model_dump())
+    goal = Goal(person_id=person_id, **payload.model_dump())
     db.add(goal)
     await db.commit()
     await db.refresh(goal)

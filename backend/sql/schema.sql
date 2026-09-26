@@ -1,206 +1,147 @@
--- Team Fit — schema Postgres (Supabase)
--- Rode este arquivo no SQL Editor do seu projeto Supabase.
--- app_users.id referencia auth.users(id) (tabela criada automaticamente pelo Supabase Auth).
+-- Team Fit — Postgres schema (self-hosted).
+-- Two fixed people (Paulo, Bárbara), no per-user accounts — access is gated by a
+-- single shared PIN at the application layer (see app/auth.py), not by row-level
+-- ownership. All identifiers are in English; food names/categories and training
+-- plan content are stored in Portuguese since that is what the app displays.
 
 create extension if not exists "pgcrypto";
 
 -- ============================================================
--- Usuários da aplicação (role fica aqui, não no Supabase Auth)
+-- The two fixed people using the app
 -- ============================================================
-create table if not exists app_users (
-  id uuid primary key references auth.users(id) on delete cascade,
-  email text not null unique,
-  full_name text not null,
-  role text not null check (role in ('admin', 'invited')) default 'invited',
-  created_at timestamptz not null default now()
-);
-
--- ============================================================
--- Perfil de saúde
--- ============================================================
-create table if not exists profiles (
+create table if not exists people (
   id uuid primary key default gen_random_uuid(),
-  user_id uuid not null unique references app_users(id) on delete cascade,
-  sexo text,
-  data_nascimento date,
-  altura_cm numeric(5,1),
-  nivel_atividade text, -- sedentario | leve | moderado | intenso | muito_intenso
-  restricoes_alimentares text[] default '{}',
-  condicoes_saude text[] default '{}',
-  medicamentos text,
-  observacoes text,
+  slug text not null unique check (slug in ('paulo', 'barbara')),
+  name text not null,
+  sex text,
+  birth_date date,
+  height_cm numeric(5,1),
+  activity_level text, -- sedentary | light | moderate | intense | very_intense
+  dietary_restrictions text[] not null default '{}',
+  health_conditions text[] not null default '{}',
+  medications text,
+  notes text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
 
 -- ============================================================
--- Metas (objetivo do usuário: perder/ganhar peso, alvo de kcal/proteína)
+-- Goals (weight/calorie/protein targets, versioned — only one active at a time)
 -- ============================================================
 create table if not exists goals (
   id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references app_users(id) on delete cascade,
-  tipo text not null check (tipo in ('perder_peso', 'ganhar_peso', 'manter_peso')),
-  peso_meta_kg numeric(5,1),
-  meta_kcal_dia integer,
-  meta_proteina_g_dia integer,
-  data_inicio date not null default current_date,
-  data_alvo date,
-  ativo boolean not null default true,
+  person_id uuid not null references people(id) on delete cascade,
+  goal_type text not null check (goal_type in ('lose_weight', 'gain_weight', 'maintain_weight')),
+  target_weight_kg numeric(5,1),
+  target_kcal_day integer,
+  target_protein_g_day integer,
+  start_date date not null default current_date,
+  target_date date,
+  active boolean not null default true,
   created_at timestamptz not null default now()
 );
-create index if not exists idx_goals_user_ativo on goals(user_id, ativo);
+create index if not exists idx_goals_person_active on goals(person_id, active);
 
 -- ============================================================
--- Histórico de peso
+-- Weight history
 -- ============================================================
 create table if not exists weight_logs (
   id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references app_users(id) on delete cascade,
-  data date not null,
-  peso_kg numeric(5,1) not null,
-  observacao text,
+  person_id uuid not null references people(id) on delete cascade,
+  date date not null,
+  weight_kg numeric(5,1) not null,
+  note text,
   created_at timestamptz not null default now(),
-  unique(user_id, data)
+  unique(person_id, date)
 );
 
 -- ============================================================
--- Medidas corporais
+-- Body measurements
 -- ============================================================
 create table if not exists body_measurements (
   id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references app_users(id) on delete cascade,
-  data date not null,
-  cintura_cm numeric(5,1),
-  quadril_cm numeric(5,1),
-  peito_cm numeric(5,1),
-  braco_cm numeric(5,1),
-  coxa_cm numeric(5,1),
-  outras_medidas jsonb default '{}',
-  observacao text,
+  person_id uuid not null references people(id) on delete cascade,
+  date date not null,
+  waist_cm numeric(5,1),
+  hip_cm numeric(5,1),
+  chest_cm numeric(5,1),
+  arm_cm numeric(5,1),
+  thigh_cm numeric(5,1),
+  neck_cm numeric(5,1),
+  other_measurements jsonb not null default '{}',
+  note text,
   created_at timestamptz not null default now(),
-  unique(user_id, data)
+  unique(person_id, date)
 );
 
 -- ============================================================
--- Plano alimentar (versionado, com histórico)
+-- Food reference table (nutrition per 100g) — drives the "Tabela de Alimentos"
+-- screen and the automatic kcal/protein calculation when logging meals.
 -- ============================================================
-create table if not exists meal_plans (
+create table if not exists foods (
   id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references app_users(id) on delete cascade,
-  versao integer not null,
-  titulo text not null,
-  conteudo text not null, -- markdown
-  kcal_alvo integer,
-  proteina_alvo_g integer,
-  ativo boolean not null default true,
-  criado_em timestamptz not null default now()
+  name text not null,
+  category text,
+  kcal_per_100g numeric(6,1) not null,
+  protein_per_100g numeric(5,1) not null default 0,
+  carbs_per_100g numeric(5,1) not null default 0,
+  fat_per_100g numeric(5,1) not null default 0,
+  default_portion_g numeric(6,1),
+  default_portion_label text,
+  source text,
+  created_at timestamptz not null default now()
 );
-create index if not exists idx_meal_plans_user on meal_plans(user_id, ativo);
+create index if not exists idx_foods_name on foods(lower(name));
 
 -- ============================================================
--- Plano de treino (versionado, com histórico) — criado pelo Personal Trainer
--- ============================================================
-create table if not exists training_plans (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references app_users(id) on delete cascade,
-  versao integer not null,
-  titulo text not null,
-  conteudo text not null, -- markdown
-  ativo boolean not null default true,
-  criado_em timestamptz not null default now()
-);
-create index if not exists idx_training_plans_user on training_plans(user_id, ativo);
-
--- ============================================================
--- Cardápio semanal
--- ============================================================
-create table if not exists weekly_menus (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references app_users(id) on delete cascade,
-  semana_inicio date not null,
-  conteudo text not null, -- markdown
-  ativo boolean not null default true,
-  criado_em timestamptz not null default now(),
-  unique(user_id, semana_inicio)
-);
-
--- ============================================================
--- Registro diário de refeições (kcal / proteína)
+-- Meal logs — one row per meal, per day, per person
 -- ============================================================
 create table if not exists meal_logs (
   id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references app_users(id) on delete cascade,
-  data date not null,
-  horario time,
-  refeicao text not null, -- cafe_da_manha | lanche_manha | almoco | lanche_tarde | jantar | ceia
-  descricao text not null,
+  person_id uuid not null references people(id) on delete cascade,
+  date date not null,
+  meal_type text not null check (
+    meal_type in ('breakfast', 'morning_snack', 'lunch', 'afternoon_snack', 'dinner', 'supper')
+  ),
+  time time,
+  created_at timestamptz not null default now()
+);
+create index if not exists idx_meal_logs_person_date on meal_logs(person_id, date);
+
+-- ============================================================
+-- Meal log items — either a `foods` reference + quantity (kcal/protein computed
+-- from the food's per-100g values) or a free-text item with manual kcal/protein
+-- (e.g. a restaurant meal with no matching food in the table).
+-- ============================================================
+create table if not exists meal_log_items (
+  id uuid primary key default gen_random_uuid(),
+  meal_log_id uuid not null references meal_logs(id) on delete cascade,
+  food_id uuid references foods(id) on delete set null,
+  free_text_description text,
+  quantity_g numeric(6,1),
   kcal numeric(6,1) not null default 0,
-  proteina_g numeric(6,1) not null default 0,
-  criado_em timestamptz not null default now()
+  protein_g numeric(6,1) not null default 0,
+  created_at timestamptz not null default now(),
+  check (food_id is not null or free_text_description is not null)
 );
-create index if not exists idx_meal_logs_user_data on meal_logs(user_id, data);
+create index if not exists idx_meal_log_items_meal_log on meal_log_items(meal_log_id);
 
 -- ============================================================
--- Registro de exercícios (frequência + estimativa de queima calórica)
+-- Training plans — versioned, manually written/edited (no AI generation).
+-- Only the "consult" screen reads the active version; edits create a new
+-- version and deactivate the previous one.
 -- ============================================================
-create table if not exists exercise_logs (
+create table if not exists training_plans (
   id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references app_users(id) on delete cascade,
-  data date not null,
-  tipo_exercicio text not null, -- musculacao | caminhada | corrida | outro
-  duracao_min integer not null,
-  intensidade text not null default 'moderada', -- leve | moderada | intensa
-  kcal_estimado numeric(6,1),
-  observacao text,
-  criado_em timestamptz not null default now()
+  person_id uuid not null references people(id) on delete cascade,
+  version integer not null,
+  title text not null,
+  content text not null, -- markdown, in Portuguese
+  active boolean not null default true,
+  created_at timestamptz not null default now()
 );
-create index if not exists idx_exercise_logs_user_data on exercise_logs(user_id, data);
+create index if not exists idx_training_plans_person_active on training_plans(person_id, active);
 
--- ============================================================
--- Histórico de chat com os agentes
--- ============================================================
-create table if not exists chat_messages (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references app_users(id) on delete cascade,
-  agente text not null default 'orquestrador', -- nutricionista | personal | chef | orquestrador
-  role text not null check (role in ('user', 'assistant')),
-  conteudo text not null,
-  criado_em timestamptz not null default now()
-);
-create index if not exists idx_chat_messages_user on chat_messages(user_id, criado_em);
-
--- ============================================================
--- Anotações dos agentes (dificuldades relatadas no chat)
--- ============================================================
-create table if not exists adherence_notes (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references app_users(id) on delete cascade,
-  agente text not null,
-  nota text not null,
-  criado_em timestamptz not null default now()
-);
-create index if not exists idx_adherence_notes_user on adherence_notes(user_id, criado_em);
-
--- ============================================================
--- Grupo familiar
--- ============================================================
-create table if not exists families (
-  id uuid primary key default gen_random_uuid(),
-  nome text not null,
-  criado_por uuid not null references app_users(id) on delete cascade,
-  criado_em timestamptz not null default now()
-);
-
-create table if not exists family_members (
-  id uuid primary key default gen_random_uuid(),
-  family_id uuid not null references families(id) on delete cascade,
-  user_id uuid not null unique references app_users(id) on delete cascade,
-  papel text not null check (papel in ('chefe', 'membro')) default 'membro',
-  entrou_em timestamptz not null default now()
-);
-create index if not exists idx_family_members_family on family_members(family_id);
-
--- NOTE: este schema não usa Row Level Security porque todo acesso ao banco
--- passa pelo backend FastAPI (autenticado via JWT do Supabase, autorização
--- feita em código). A service_role key do Supabase é usada apenas no
--- backend e NUNCA deve ser exposta ao frontend.
+-- NOTE: no Row Level Security — the app has no per-user identity, only a single
+-- shared PIN gate enforced in the FastAPI layer (app/auth.py). Both people are
+-- always fully accessible to whoever is signed into the app with the PIN.

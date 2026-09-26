@@ -1,27 +1,26 @@
 import uuid
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.auth import CurrentUser, get_current_user, resolve_target_user_id
+from app.auth import require_session
 from app.database import get_db
+from app.deps import get_person_id
 from app.models import BodyMeasurement
 from app.schemas import BodyMeasurementIn, BodyMeasurementOut
 
-router = APIRouter(prefix="/measurements", tags=["measurements"])
+router = APIRouter(prefix="/measurements", tags=["measurements"], dependencies=[Depends(require_session)])
 
 
 @router.get("", response_model=list[BodyMeasurementOut])
 async def list_measurements(
-    user_id: uuid.UUID | None = Query(None),
-    current_user: CurrentUser = Depends(get_current_user),
+    person_id: uuid.UUID = Depends(get_person_id),
     db: AsyncSession = Depends(get_db),
 ):
-    target_id = resolve_target_user_id(user_id, current_user)
     result = await db.execute(
-        select(BodyMeasurement).where(BodyMeasurement.user_id == target_id).order_by(BodyMeasurement.data)
+        select(BodyMeasurement).where(BodyMeasurement.person_id == person_id).order_by(BodyMeasurement.date)
     )
     return result.scalars().all()
 
@@ -29,22 +28,20 @@ async def list_measurements(
 @router.post("", response_model=BodyMeasurementOut, status_code=201)
 async def upsert_measurement(
     payload: BodyMeasurementIn,
-    user_id: uuid.UUID | None = Query(None),
-    current_user: CurrentUser = Depends(get_current_user),
+    person_id: uuid.UUID = Depends(get_person_id),
     db: AsyncSession = Depends(get_db),
 ):
-    target_id = resolve_target_user_id(user_id, current_user)
     values = payload.model_dump()
-    # Só atualiza os campos que vieram na requisição — evita que salvar só o
-    # abdômen (ex: pela tela de Perfil) apague quadril/peito já registrados
-    # para o mesmo dia por outra tela.
-    update_values = {k: v for k, v in payload.model_dump(exclude_unset=True).items() if k != "data"}
+    # Only overwrite fields present in the request — otherwise saving just the
+    # waist (e.g. from the Profile screen) would wipe hip/chest already logged
+    # for the same day from another screen.
+    update_values = {k: v for k, v in payload.model_dump(exclude_unset=True).items() if k != "date"}
     stmt = (
         insert(BodyMeasurement)
-        .values(user_id=target_id, **values)
+        .values(person_id=person_id, **values)
         .on_conflict_do_update(
-            index_elements=[BodyMeasurement.user_id, BodyMeasurement.data],
-            set_=update_values or {"data": BodyMeasurement.data},
+            index_elements=[BodyMeasurement.person_id, BodyMeasurement.date],
+            set_=update_values or {"date": BodyMeasurement.date},
         )
         .returning(BodyMeasurement)
     )

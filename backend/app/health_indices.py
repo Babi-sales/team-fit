@@ -1,83 +1,84 @@
-"""Cálculo de IMC, Relação Cintura-Quadril (RCQ) e Relação Cintura-Altura (RCA)
-a partir do histórico de peso e medidas, com classificação de risco."""
+"""BMI, waist-hip ratio (WHR) and waist-height ratio (WHtR) from weight/measurement
+history, with risk classification. Classification labels are returned in
+Portuguese — they are displayed as-is in the dashboard."""
 
 from app.models import BodyMeasurement, WeightLog
-from app.schemas import HealthIndices, IndicePonto
+from app.schemas import HealthIndices, IndexPoint
 
 
-def classificar_imc(imc: float) -> str:
-    if imc < 18.5:
+def classify_bmi(bmi: float) -> str:
+    if bmi < 18.5:
         return "Abaixo do peso"
-    if imc < 25:
+    if bmi < 25:
         return "Peso normal"
-    if imc < 30:
+    if bmi < 30:
         return "Sobrepeso"
-    if imc < 35:
+    if bmi < 35:
         return "Obesidade grau I"
-    if imc < 40:
+    if bmi < 40:
         return "Obesidade grau II"
     return "Obesidade grau III"
 
 
-def classificar_rcq(rcq: float, sexo: str | None) -> str:
-    feminino = (sexo or "").strip().lower().startswith("f")
-    limite_baixo = 0.80 if feminino else 0.90
-    limite_moderado = 0.85 if feminino else 1.0
-    if rcq < limite_baixo:
+def classify_whr(whr: float, sex: str | None) -> str:
+    female = (sex or "").strip().lower().startswith("f")
+    low_cutoff = 0.80 if female else 0.90
+    moderate_cutoff = 0.85 if female else 1.0
+    if whr < low_cutoff:
         return "Risco baixo"
-    if rcq < limite_moderado:
+    if whr < moderate_cutoff:
         return "Risco moderado"
     return "Risco alto"
 
 
-def classificar_rca(rca: float) -> str:
-    if rca < 0.5:
+def classify_whtr(whtr: float) -> str:
+    if whtr < 0.5:
         return "Risco baixo"
-    if rca < 0.6:
+    if whtr < 0.6:
         return "Risco moderado"
     return "Risco alto"
 
 
 def compute_health_indices(
-    altura_cm: float | None,
-    sexo: str | None,
+    height_cm: float | None,
+    sex: str | None,
     weight_logs: list[WeightLog],
     measurements: list[BodyMeasurement],
 ) -> HealthIndices:
-    altura_m = float(altura_cm) / 100 if altura_cm else None
+    height_m = float(height_cm) / 100 if height_cm else None
 
-    imc_historico = (
-        [IndicePonto(data=w.data, valor=round(float(w.peso_kg) / (altura_m**2), 1)) for w in weight_logs]
-        if altura_m
+    bmi_history = (
+        [IndexPoint(date=w.date, value=round(float(w.weight_kg) / (height_m**2), 1)) for w in weight_logs]
+        if height_m
         else []
     )
-    rcq_historico = [
-        IndicePonto(data=m.data, valor=round(float(m.cintura_cm) / float(m.quadril_cm), 2))
+    whr_history = [
+        IndexPoint(date=m.date, value=round(float(m.waist_cm) / float(m.hip_cm), 2))
         for m in measurements
-        if m.cintura_cm and m.quadril_cm
+        if m.waist_cm and m.hip_cm
     ]
-    rca_historico = (
+    whtr_history = (
         [
-            IndicePonto(data=m.data, valor=round(float(m.cintura_cm) / (float(altura_cm)), 2))
+            IndexPoint(date=m.date, value=round(float(m.waist_cm) / float(height_cm), 2))
             for m in measurements
-            if m.cintura_cm
+            if m.waist_cm
         ]
-        if altura_cm
+        if height_cm
         else []
     )
 
-    imc_atual = imc_historico[-1].valor if imc_historico else None
-    rcq_atual = rcq_historico[-1].valor if rcq_historico else None
-    rca_atual = rca_historico[-1].valor if rca_historico else None
+    bmi_current = bmi_history[-1].value if bmi_history else None
+    whr_current = whr_history[-1].value if whr_history else None
+    whtr_current = whtr_history[-1].value if whtr_history else None
 
     return HealthIndices(
-        imc_atual=imc_atual,
-        imc_classificacao=classificar_imc(imc_atual) if imc_atual is not None else None,
-        imc_historico=imc_historico,
-        rcq_atual=rcq_atual,
-        rcq_classificacao=classificar_rcq(rcq_atual, sexo) if rcq_atual is not None else None,
-        rcq_historico=rcq_historico,
-        rca_atual=rca_atual,
-        rca_classificacao=classificar_rca(rca_atual) if rca_atual is not None else None,
-        rca_historico=rca_historico,
+        bmi_current=bmi_current,
+        bmi_classification=classify_bmi(bmi_current) if bmi_current is not None else None,
+        bmi_history=bmi_history,
+        whr_current=whr_current,
+        whr_classification=classify_whr(whr_current, sex) if whr_current is not None else None,
+        whr_history=whr_history,
+        whtr_current=whtr_current,
+        whtr_classification=classify_whtr(whtr_current) if whtr_current is not None else None,
+        whtr_history=whtr_history,
     )

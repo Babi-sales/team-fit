@@ -1,278 +1,201 @@
 import uuid
-from datetime import date, datetime, time
+from datetime import date, datetime
+from datetime import time as time_of_day
 
 from pydantic import BaseModel, ConfigDict
 
 
-# ---------- Users ----------
-class UserOut(BaseModel):
+# ---------- Auth ----------
+class LoginIn(BaseModel):
+    pin: str
+
+
+# ---------- People ----------
+class PersonIn(BaseModel):
+    sex: str | None = None
+    birth_date: date | None = None
+    height_cm: float | None = None
+    activity_level: str | None = None
+    dietary_restrictions: list[str] = []
+    health_conditions: list[str] = []
+    medications: str | None = None
+    notes: str | None = None
+
+
+class PersonOut(PersonIn):
     model_config = ConfigDict(from_attributes=True)
     id: uuid.UUID
-    email: str
-    full_name: str
-    role: str
-    created_at: datetime
-
-
-class InviteUserIn(BaseModel):
-    email: str
-    full_name: str
-    role: str = "invited"
-
-
-# ---------- Profile ----------
-class ProfileIn(BaseModel):
-    sexo: str | None = None
-    data_nascimento: date | None = None
-    altura_cm: float | None = None
-    nivel_atividade: str | None = None
-    restricoes_alimentares: list[str] = []
-    condicoes_saude: list[str] = []
-    medicamentos: str | None = None
-    observacoes: str | None = None
-
-
-class ProfileOut(ProfileIn):
-    model_config = ConfigDict(from_attributes=True)
-    id: uuid.UUID
-    user_id: uuid.UUID
+    slug: str
+    name: str
     updated_at: datetime
 
 
 # ---------- Goals ----------
 class GoalIn(BaseModel):
-    tipo: str  # perder_peso | ganhar_peso | manter_peso
-    peso_meta_kg: float | None = None
-    meta_kcal_dia: int | None = None
-    meta_proteina_g_dia: int | None = None
-    data_alvo: date | None = None
+    goal_type: str  # lose_weight | gain_weight | maintain_weight
+    target_weight_kg: float | None = None
+    target_kcal_day: int | None = None
+    target_protein_g_day: int | None = None
+    target_date: date | None = None
 
 
 class GoalOut(GoalIn):
     model_config = ConfigDict(from_attributes=True)
     id: uuid.UUID
-    user_id: uuid.UUID
-    data_inicio: date
-    ativo: bool
+    person_id: uuid.UUID
+    start_date: date
+    active: bool
     created_at: datetime
 
 
 # ---------- Weight ----------
 class WeightLogIn(BaseModel):
-    data: date
-    peso_kg: float
-    observacao: str | None = None
+    date: date
+    weight_kg: float
+    note: str | None = None
 
 
 class WeightLogOut(WeightLogIn):
     model_config = ConfigDict(from_attributes=True)
     id: uuid.UUID
-    user_id: uuid.UUID
+    person_id: uuid.UUID
 
 
 # ---------- Body measurements ----------
 class BodyMeasurementIn(BaseModel):
-    data: date
-    cintura_cm: float | None = None
-    quadril_cm: float | None = None
-    peito_cm: float | None = None
-    braco_cm: float | None = None
-    coxa_cm: float | None = None
-    outras_medidas: dict = {}
-    observacao: str | None = None
+    date: date
+    waist_cm: float | None = None
+    hip_cm: float | None = None
+    chest_cm: float | None = None
+    arm_cm: float | None = None
+    thigh_cm: float | None = None
+    neck_cm: float | None = None
+    other_measurements: dict = {}
+    note: str | None = None
 
 
 class BodyMeasurementOut(BodyMeasurementIn):
     model_config = ConfigDict(from_attributes=True)
     id: uuid.UUID
-    user_id: uuid.UUID
+    person_id: uuid.UUID
 
 
-# ---------- Meal plans ----------
-class MealPlanIn(BaseModel):
-    titulo: str
-    conteudo: str
-    kcal_alvo: int | None = None
-    proteina_alvo_g: int | None = None
+# ---------- Foods (nutrition reference table) ----------
+class FoodIn(BaseModel):
+    name: str
+    category: str | None = None
+    kcal_per_100g: float
+    protein_per_100g: float = 0
+    carbs_per_100g: float = 0
+    fat_per_100g: float = 0
+    default_portion_g: float | None = None
+    default_portion_label: str | None = None
+    source: str | None = None
 
 
-class MealPlanOut(MealPlanIn):
+class FoodOut(FoodIn):
     model_config = ConfigDict(from_attributes=True)
     id: uuid.UUID
-    user_id: uuid.UUID
-    versao: int
-    ativo: bool
-    criado_em: datetime
+    created_at: datetime
 
 
-# ---------- Training plans (plano de treino) ----------
-class TrainingPlanOut(BaseModel):
+# ---------- Training plans ----------
+class TrainingPlanIn(BaseModel):
+    title: str
+    content: str
+
+
+class TrainingPlanOut(TrainingPlanIn):
     model_config = ConfigDict(from_attributes=True)
     id: uuid.UUID
-    user_id: uuid.UUID
-    versao: int
-    titulo: str
-    conteudo: str
-    ativo: bool
-    criado_em: datetime
-
-
-# ---------- Weekly menus ----------
-class WeeklyMenuIn(BaseModel):
-    semana_inicio: date
-    conteudo: str
-
-
-class WeeklyMenuOut(WeeklyMenuIn):
-    model_config = ConfigDict(from_attributes=True)
-    id: uuid.UUID
-    user_id: uuid.UUID
-    ativo: bool
-    criado_em: datetime
+    person_id: uuid.UUID
+    version: int
+    active: bool
+    created_at: datetime
 
 
 # ---------- Meal logs ----------
-class MealLogIn(BaseModel):
-    data: date
-    horario: time | None = None
-    refeicao: str
-    descricao: str
-    # Se não informados, o backend estima automaticamente a partir da descrição (Gemini).
+class MealLogItemIn(BaseModel):
+    food_id: uuid.UUID | None = None
+    quantity_g: float | None = None
+    # Only used when food_id is not set (e.g. a restaurant item with no match
+    # in the food table) — kcal/protein are then taken as-is, not computed.
+    free_text_description: str | None = None
     kcal: float | None = None
-    proteina_g: float | None = None
+    protein_g: float | None = None
+
+
+class MealLogItemOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: uuid.UUID
+    meal_log_id: uuid.UUID
+    food_id: uuid.UUID | None
+    free_text_description: str | None
+    quantity_g: float | None
+    kcal: float
+    protein_g: float
+
+
+class MealLogIn(BaseModel):
+    date: date
+    meal_type: str
+    time: time_of_day | None = None
 
 
 class MealLogOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: uuid.UUID
-    user_id: uuid.UUID
-    data: date
-    horario: time | None = None
-    refeicao: str
-    descricao: str
-    kcal: float
-    proteina_g: float
+    person_id: uuid.UUID
+    date: date
+    meal_type: str
+    time: time_of_day | None = None
+    items: list[MealLogItemOut] = []
 
 
 class DailyTotals(BaseModel):
-    data: date
-    kcal_total: float
-    proteina_total: float
-    meta_kcal: int | None
-    meta_proteina: int | None
-    diferenca_kcal: float | None
-    diferenca_proteina: float | None
-    refeicoes: list[MealLogOut]
+    date: date
+    total_kcal: float
+    total_protein: float
+    target_kcal: int | None
+    target_protein: int | None
+    kcal_diff: float | None
+    protein_diff: float | None
+    meals: list[MealLogOut]
 
 
-class WeeklyConsolidated(BaseModel):
-    semana_inicio: date
-    semana_fim: date
-    media_kcal_dia: float
-    media_proteina_dia: float
-    meta_kcal: int | None
-    meta_proteina: int | None
-    dias: list[DailyTotals]
-    kcal_estimado_queimado_total: float
-    treinos_realizados: int
+class DailyKcalPoint(BaseModel):
+    date: date
+    total_kcal: float
+    target_kcal: int | None
 
 
-# ---------- Exercise logs ----------
-class ExerciseLogIn(BaseModel):
-    data: date
-    tipo_exercicio: str
-    duracao_min: int
-    intensidade: str = "moderada"
-    kcal_estimado: float | None = None
-    observacao: str | None = None
-
-
-class ExerciseLogOut(ExerciseLogIn):
-    model_config = ConfigDict(from_attributes=True)
-    id: uuid.UUID
-    user_id: uuid.UUID
-
-
-
-# ---------- Chat ----------
-class ChatMessageIn(BaseModel):
-    conteudo: str
-    agente: str = "orquestrador"
-
-
-class ChatMessageOut(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-    id: uuid.UUID
-    user_id: uuid.UUID
-    agente: str
-    role: str
-    conteudo: str
-    criado_em: datetime
-
-
-# ---------- Índices de saúde (IMC / RCQ / RCA) ----------
-class IndicePonto(BaseModel):
-    data: date
-    valor: float
+# ---------- Health indices (BMI / waist-hip ratio / waist-height ratio) ----------
+class IndexPoint(BaseModel):
+    date: date
+    value: float
 
 
 class HealthIndices(BaseModel):
-    imc_atual: float | None
-    imc_classificacao: str | None
-    imc_historico: list[IndicePonto]
-    rcq_atual: float | None
-    rcq_classificacao: str | None
-    rcq_historico: list[IndicePonto]
-    rca_atual: float | None
-    rca_classificacao: str | None
-    rca_historico: list[IndicePonto]
+    bmi_current: float | None
+    bmi_classification: str | None
+    bmi_history: list[IndexPoint]
+    whr_current: float | None
+    whr_classification: str | None
+    whr_history: list[IndexPoint]
+    whtr_current: float | None
+    whtr_classification: str | None
+    whtr_history: list[IndexPoint]
 
 
 # ---------- Dashboard ----------
 class DashboardSummary(BaseModel):
-    peso_atual_kg: float | None
-    peso_inicial_kg: float | None
-    peso_meta_kg: float | None
-    variacao_peso_kg: float | None
-    historico_peso: list[WeightLogOut]
-    historico_medidas: list[BodyMeasurementOut]
-    frequencia_exercicio_semana: int
-    kcal_estimado_queimado_semana: float
-    media_kcal_dia_semana: float
-    media_proteina_dia_semana: float
-    meta_kcal: int | None
-    meta_proteina: int | None
+    current_weight_kg: float | None
+    initial_weight_kg: float | None
+    target_weight_kg: float | None
+    weight_change_kg: float | None
+    weight_history: list[WeightLogOut]
+    measurement_history: list[BodyMeasurementOut]
+    target_kcal: int | None
+    target_protein: int | None
+    daily_kcal_series: list[DailyKcalPoint]
     indices: HealthIndices
-
-
-# ---------- Anotações (dificuldades relatadas no chat) ----------
-class AdherenceNoteOut(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-    id: uuid.UUID
-    user_id: uuid.UUID
-    agente: str
-    nota: str
-    criado_em: datetime
-
-
-# ---------- Grupo familiar ----------
-class FamilyCreateIn(BaseModel):
-    nome: str
-
-
-class InviteFamilyMemberIn(BaseModel):
-    email: str
-    full_name: str
-
-
-class FamilyMemberDetail(BaseModel):
-    user_id: uuid.UUID
-    full_name: str
-    email: str
-    papel: str
-
-
-class FamilyDetail(BaseModel):
-    id: uuid.UUID
-    nome: str
-    membros: list[FamilyMemberDetail]

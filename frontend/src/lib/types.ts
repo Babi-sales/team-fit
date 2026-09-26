@@ -1,196 +1,145 @@
-export type Role = "admin" | "invited";
+export type PersonSlug = "paulo" | "barbara";
 
-export interface FamilyMemberDetail {
-  user_id: string;
-  full_name: string;
-  email: string;
-  papel: "chefe" | "membro";
-}
-
-export interface FamilyDetail {
+export interface Person {
   id: string;
-  nome: string;
-  membros: FamilyMemberDetail[];
-}
-
-export interface AdherenceNote {
-  id: string;
-  user_id: string;
-  agente: string;
-  nota: string;
-  criado_em: string;
-}
-
-export interface AppUser {
-  id: string;
-  email: string;
-  full_name: string;
-  role: Role;
-  created_at: string;
-}
-
-export interface Profile {
-  id: string;
-  user_id: string;
-  sexo: string | null;
-  data_nascimento: string | null;
-  altura_cm: number | null;
-  nivel_atividade: string | null;
-  restricoes_alimentares: string[];
-  condicoes_saude: string[];
-  medicamentos: string | null;
-  observacoes: string | null;
+  slug: PersonSlug;
+  name: string;
+  sex: string | null;
+  birth_date: string | null;
+  height_cm: number | null;
+  activity_level: string | null;
+  dietary_restrictions: string[];
+  health_conditions: string[];
+  medications: string | null;
+  notes: string | null;
   updated_at: string;
 }
 
+export type GoalType = "lose_weight" | "gain_weight" | "maintain_weight";
+
 export interface Goal {
   id: string;
-  user_id: string;
-  tipo: "perder_peso" | "ganhar_peso" | "manter_peso";
-  peso_meta_kg: number | null;
-  meta_kcal_dia: number | null;
-  meta_proteina_g_dia: number | null;
-  data_inicio: string;
-  data_alvo: string | null;
-  ativo: boolean;
+  person_id: string;
+  goal_type: GoalType;
+  target_weight_kg: number | null;
+  target_kcal_day: number | null;
+  target_protein_g_day: number | null;
+  start_date: string;
+  target_date: string | null;
+  active: boolean;
   created_at: string;
 }
 
 export interface WeightLog {
   id: string;
-  user_id: string;
-  data: string;
-  peso_kg: number;
-  observacao: string | null;
+  person_id: string;
+  date: string;
+  weight_kg: number;
+  note: string | null;
 }
 
 export interface BodyMeasurement {
   id: string;
-  user_id: string;
-  data: string;
-  cintura_cm: number | null;
-  quadril_cm: number | null;
-  peito_cm: number | null;
-  braco_cm: number | null;
-  coxa_cm: number | null;
-  outras_medidas: Record<string, unknown>;
-  observacao: string | null;
+  person_id: string;
+  date: string;
+  waist_cm: number | null;
+  hip_cm: number | null;
+  chest_cm: number | null;
+  arm_cm: number | null;
+  thigh_cm: number | null;
+  neck_cm: number | null;
+  other_measurements: Record<string, unknown>;
+  note: string | null;
 }
 
-export interface MealPlan {
+export interface Food {
   id: string;
-  user_id: string;
-  versao: number;
-  titulo: string;
-  conteudo: string;
-  kcal_alvo: number | null;
-  proteina_alvo_g: number | null;
-  ativo: boolean;
-  criado_em: string;
+  name: string;
+  category: string | null;
+  kcal_per_100g: number;
+  protein_per_100g: number;
+  carbs_per_100g: number;
+  fat_per_100g: number;
+  default_portion_g: number | null;
+  default_portion_label: string | null;
+  source: string | null;
+  created_at: string;
 }
 
-export interface TrainingPlan {
-  id: string;
-  user_id: string;
-  versao: number;
-  titulo: string;
-  conteudo: string;
-  ativo: boolean;
-  criado_em: string;
-}
+export type MealType = "breakfast" | "morning_snack" | "lunch" | "afternoon_snack" | "dinner" | "supper";
 
-export interface WeeklyMenu {
+export interface MealLogItem {
   id: string;
-  user_id: string;
-  semana_inicio: string;
-  conteudo: string;
-  ativo: boolean;
-  criado_em: string;
+  meal_log_id: string;
+  food_id: string | null;
+  free_text_description: string | null;
+  quantity_g: number | null;
+  kcal: number;
+  protein_g: number;
 }
 
 export interface MealLog {
   id: string;
-  user_id: string;
-  data: string;
-  horario: string | null;
-  refeicao: string;
-  descricao: string;
-  kcal: number;
-  proteina_g: number;
+  person_id: string;
+  date: string;
+  meal_type: MealType;
+  time: string | null;
+  items: MealLogItem[];
 }
 
 export interface DailyTotals {
-  data: string;
-  kcal_total: number;
-  proteina_total: number;
-  meta_kcal: number | null;
-  meta_proteina: number | null;
-  diferenca_kcal: number | null;
-  diferenca_proteina: number | null;
-  refeicoes: MealLog[];
+  date: string;
+  total_kcal: number;
+  total_protein: number;
+  target_kcal: number | null;
+  target_protein: number | null;
+  kcal_diff: number | null;
+  protein_diff: number | null;
+  meals: MealLog[];
 }
 
-export interface WeeklyConsolidated {
-  semana_inicio: string;
-  semana_fim: string;
-  media_kcal_dia: number;
-  media_proteina_dia: number;
-  meta_kcal: number | null;
-  meta_proteina: number | null;
-  dias: DailyTotals[];
-  kcal_estimado_queimado_total: number;
-  treinos_realizados: number;
+export interface DailyKcalPoint {
+  date: string;
+  total_kcal: number;
+  target_kcal: number | null;
 }
 
-export interface ExerciseLog {
+export interface TrainingPlan {
   id: string;
-  user_id: string;
-  data: string;
-  tipo_exercicio: string;
-  duracao_min: number;
-  intensidade: string;
-  kcal_estimado: number | null;
-  observacao: string | null;
+  person_id: string;
+  version: number;
+  title: string;
+  content: string;
+  active: boolean;
+  created_at: string;
 }
 
-export interface ChatMessageOut {
-  id: string;
-  user_id: string;
-  agente: string;
-  role: "user" | "assistant";
-  conteudo: string;
-  criado_em: string;
-}
-
-export interface IndicePonto {
-  data: string;
-  valor: number;
+export interface IndexPoint {
+  date: string;
+  value: number;
 }
 
 export interface HealthIndices {
-  imc_atual: number | null;
-  imc_classificacao: string | null;
-  imc_historico: IndicePonto[];
-  rcq_atual: number | null;
-  rcq_classificacao: string | null;
-  rcq_historico: IndicePonto[];
-  rca_atual: number | null;
-  rca_classificacao: string | null;
-  rca_historico: IndicePonto[];
+  bmi_current: number | null;
+  bmi_classification: string | null;
+  bmi_history: IndexPoint[];
+  whr_current: number | null;
+  whr_classification: string | null;
+  whr_history: IndexPoint[];
+  whtr_current: number | null;
+  whtr_classification: string | null;
+  whtr_history: IndexPoint[];
 }
 
 export interface DashboardSummary {
-  peso_atual_kg: number | null;
-  peso_inicial_kg: number | null;
-  peso_meta_kg: number | null;
-  variacao_peso_kg: number | null;
-  historico_peso: WeightLog[];
-  historico_medidas: BodyMeasurement[];
-  frequencia_exercicio_semana: number;
-  kcal_estimado_queimado_semana: number;
-  media_kcal_dia_semana: number;
-  media_proteina_dia_semana: number;
-  meta_kcal: number | null;
-  meta_proteina: number | null;
+  current_weight_kg: number | null;
+  initial_weight_kg: number | null;
+  target_weight_kg: number | null;
+  weight_change_kg: number | null;
+  weight_history: WeightLog[];
+  measurement_history: BodyMeasurement[];
+  target_kcal: number | null;
+  target_protein: number | null;
+  daily_kcal_series: DailyKcalPoint[];
   indices: HealthIndices;
 }
