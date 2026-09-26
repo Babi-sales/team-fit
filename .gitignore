@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+
+# Env
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+build/
+dist/
+.turbo/
+
+# Dados pessoais reais (saúde, medidas, medicação) — nunca vai para o repo público.
+# Fonte de verdade fica só local; usada pelos scripts de seed em scripts/.
+/data/
+
+# OS
+.DS_Store
+
+# Editors
+.vscode/
+.idea/
+
+# Logs
+*.log
+npm-debug.log*
